@@ -2,7 +2,7 @@
 <html lang="cs">
 <head>
 <meta charset="UTF-8">
-<title>Online Piškvorky</title>
+<title>Online Piškvorky + Bot</title>
 
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
@@ -26,16 +26,6 @@ header h1{
     text-shadow:0 0 20px #a855f7;
 }
 
-header button{
-    margin-top:10px;
-    padding:10px 25px;
-    border:none;
-    border-radius:25px;
-    background:#9d4edd;
-    color:white;
-    cursor:pointer;
-}
-
 button{
     padding:12px 30px;
     margin:10px;
@@ -45,6 +35,16 @@ button{
     color:white;
     font-size:16px;
     cursor:pointer;
+    transition: 0.3s;
+}
+
+button:hover {
+    background: #c77dff;
+    transform: scale(1.05);
+}
+
+.bot-btn {
+    background: #3f37c9;
 }
 
 input{
@@ -84,7 +84,6 @@ input{
     font-weight:bold;
 }
 
-/* STYL PRO VÍTĚZNOU FOTKU */
 #winOverlay {
     display: none;
     position: fixed;
@@ -119,8 +118,8 @@ input{
 <body>
 
 <div id="winOverlay">
-    <h2>🎉 VYHRÁL JSI! 🎉</h2>
-    <img src="tenge.jpeg" alt="Vítězná fotka">
+    <h2 id="winText">🎉 VYHRÁL JSI! 🎉</h2>
+    <img src="image_0.png" alt="Vítězná fotka">
 </div>
 
 <header>
@@ -130,13 +129,16 @@ input{
 
 <br>
 
-<button onclick="createRoom()">➕ Vytvořit místnost</button><br>
-
-<input id="joinCode" placeholder="4místný kód" maxlength="4">
-<button onclick="joinRoom()">➡️ Připojit</button>
+<div id="menu">
+    <button onclick="createRoom()">➕ Vytvořit místnost</button>
+    <button class="bot-btn" onclick="startBotGame()">🤖 Hrát s botem</button>
+    <br>
+    <input id="joinCode" placeholder="4místný kód" maxlength="4">
+    <button onclick="joinRoom()">➡️ Připojit se k hráči</button>
+</div>
 
 <p id="code"></p>
-<h2 id="status"></h2>
+<h2 id="status">Vyberte si režim hry</h2>
 
 <div class="board">
     <div class="cell" onclick="play(0)"></div>
@@ -156,38 +158,44 @@ let conn;
 let mySymbol;
 let board = Array(9).fill("");
 let turn = "X";
+let isBotMode = false;
 
-/* YOUTUBE */
 function openYT(){
-    window.open(
-        "https://www.youtube.com/channel/UCoIl4gO_SxWYUGktSmdM8kw",
-        "_blank"
-    );
+    window.open("https://www.youtube.com/channel/UCoIl4gO_SxWYUGktSmdM8kw", "_blank");
+}
+
+/* REŽIM BOT */
+function startBotGame() {
+    resetGame();
+    isBotMode = true;
+    mySymbol = "X";
+    turn = "X";
+    document.getElementById("status").innerText = "Hraješ proti botovi (jsi X)";
+    document.getElementById("code").innerText = "🤖 Režim: Proti botovi";
 }
 
 /* CREATE ROOM */
 function createRoom(){
+    resetGame();
+    isBotMode = false;
     const roomCode = Math.floor(1000 + Math.random() * 9000).toString();
-
     peer = new Peer(roomCode);
     peer.on("open", id => {
-        document.getElementById("code").innerText =
-            "🟢 KÓD MÍSTNOSTI: " + id;
+        document.getElementById("code").innerText = "🟢 KÓD MÍSTNOSTI: " + id;
         mySymbol = "X";
-        document.getElementById("status").innerText =
-            "Čeká se na druhého hráče...";
+        document.getElementById("status").innerText = "Čeká se na druhého hráče...";
     });
-
     peer.on("connection", c => {
         conn = c;
         setup();
-        document.getElementById("status").innerText =
-            "Hraješ za X – tvůj tah";
+        document.getElementById("status").innerText = "Hraješ za X – tvůj tah";
     });
 }
 
 /* JOIN ROOM */
 function joinRoom(){
+    resetGame();
+    isBotMode = false;
     const code = document.getElementById("joinCode").value;
     if(code.length !== 4) return alert("Zadej 4místný kód");
 
@@ -196,12 +204,18 @@ function joinRoom(){
         conn = peer.connect(code);
         mySymbol = "O";
         setup();
-        document.getElementById("status").innerText =
-            "Hraješ za O – čekej na tah";
+        document.getElementById("status").innerText = "Hraješ za O – čekej na tah";
     });
 }
 
-/* CONNECTION */
+function resetGame() {
+    board = Array(9).fill("");
+    turn = "X";
+    document.querySelectorAll(".cell").forEach(c => c.innerText = "");
+    if(peer) peer.destroy();
+    conn = null;
+}
+
 function setup(){
     conn.on("data", d => {
         board[d.i] = d.s;
@@ -213,54 +227,91 @@ function setup(){
 
 /* PLAY */
 function play(i){
-    if(board[i] || turn !== mySymbol || !conn) return;
+    if(board[i] || turn !== mySymbol || ( !isBotMode && !conn)) return;
 
-    board[i] = mySymbol;
-    document.querySelectorAll(".cell")[i].innerText = mySymbol;
-    conn.send({i:i,s:mySymbol});
-    turn = mySymbol === "X" ? "O" : "X";
-    document.getElementById("status").innerText = "Čekej na soupeře";
+    // Tah hráče
+    makeMove(i, mySymbol);
 
-    checkWinner();
+    if (checkWinner()) return;
+
+    if (isBotMode) {
+        turn = "O"; // Tah bota
+        document.getElementById("status").innerText = "Bot přemýšlí...";
+        setTimeout(botMove, 600); // Malá pauza, aby to vypadalo realističtěji
+    } else {
+        conn.send({i:i, s:mySymbol});
+        turn = mySymbol === "X" ? "O" : "X";
+        document.getElementById("status").innerText = "Čekej na soupeře";
+    }
+}
+
+function makeMove(i, symbol) {
+    board[i] = symbol;
+    document.querySelectorAll(".cell")[i].innerText = symbol;
+}
+
+/* LOGIKA BOTA */
+function botMove() {
+    if (turn !== "O") return;
+
+    // Najít všechna volná políčka
+    let available = [];
+    board.forEach((val, idx) => {
+        if (val === "") available.push(idx);
+    });
+
+    if (available.length > 0) {
+        // Jednoduchý bot: vybere náhodné pole
+        const randomIndex = available[Math.floor(Math.random() * available.length)];
+        makeMove(randomIndex, "O");
+        
+        if (!checkWinner()) {
+            turn = "X";
+            document.getElementById("status").innerText = "Tvůj tah (X)";
+        }
+    }
 }
 
 /* CHECK WINNER */
 function checkWinner(){
     const combos = [
-        [0,1,2],[3,4,5],[6,7,8], // řádky
-        [0,3,6],[1,4,7],[2,5,8], // sloupce
-        [0,4,8],[2,4,6]          // diagonály
+        [0,1,2],[3,4,5],[6,7,8], 
+        [0,3,6],[1,4,7],[2,5,8], 
+        [0,4,8],[2,4,6]
     ];
 
     for(const c of combos){
         if(board[c[0]] && board[c[0]] === board[c[1]] && board[c[0]] === board[c[2]]){
-            if(board[c[0]] === mySymbol){
-                document.getElementById("status").innerText = "🎉 You won!";
-                
-                // ZOBRAZENÍ FOTKY PŘI VÝHŘE
-                const overlay = document.getElementById("winOverlay");
-                overlay.style.display = "flex";
-                
-                // SKRYTÍ PO 4 SEKUNDÁCH
-                setTimeout(() => {
-                    overlay.style.display = "none";
-                }, 4000);
-
+            const winner = board[c[0]];
+            
+            if(winner === mySymbol){
+                document.getElementById("status").innerText = "🎉 Vyhrál jsi!";
+                showWinOverlay("🎉 VYHRÁL JSI! 🎉");
             } else {
-                document.getElementById("status").innerText = "💀 You lost!";
+                document.getElementById("status").innerText = "💀 Prohrál jsi!";
+                // Pokud chceš ukázat fotku i při prohře, můžeš zavolat showWinOverlay s jiným textem
             }
-            turn = null; // zablokovat další tahy
+            turn = null; 
             return true;
         }
     }
 
     if(board.every(cell => cell)){
-        document.getElementById("status").innerText = "🤝 Draw!";
+        document.getElementById("status").innerText = "🤝 Remíza!";
         turn = null;
         return true;
     }
 
     return false;
+}
+
+function showWinOverlay(text) {
+    const overlay = document.getElementById("winOverlay");
+    document.getElementById("winText").innerText = text;
+    overlay.style.display = "flex";
+    setTimeout(() => {
+        overlay.style.display = "none";
+    }, 4000);
 }
 </script>
 
