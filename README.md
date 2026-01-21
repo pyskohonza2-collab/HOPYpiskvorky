@@ -13,6 +13,7 @@ body{
     background:radial-gradient(circle at top,#3a0ca3,#000 70%);
     color:white;
     text-align:center;
+    overflow-x: hidden;
 }
 
 header{
@@ -82,10 +83,45 @@ input{
     color:#c77dff;
     font-weight:bold;
 }
+
+/* STYL PRO VÍTĚZNOU FOTKU */
+#winOverlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.85);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+#winOverlay img {
+    max-width: 90%;
+    max-height: 70%;
+    border-radius: 20px;
+    box-shadow: 0 0 50px #e0aaff;
+    border: 5px solid #9d4edd;
+}
+
+#winOverlay h2 {
+    font-size: 40px;
+    margin-bottom: 20px;
+    color: #e0aaff;
+    text-shadow: 0 0 10px #a855f7;
+}
 </style>
 </head>
 
 <body>
+
+<div id="winOverlay">
+    <h2>🎉 VYHRÁL JSI! 🎉</h2>
+    <img src="tenge.jpeg" alt="Vítězná fotka">
+</div>
 
 <header>
     <h1>🎮 Online Piškvorky</h1>
@@ -171,7 +207,7 @@ function setup(){
         board[d.i] = d.s;
         document.querySelectorAll(".cell")[d.i].innerText = d.s;
         turn = mySymbol;
-        document.getElementById("status").innerText = "Tvůj tah";
+        if(!checkWinner()) document.getElementById("status").innerText = "Tvůj tah";
     });
 }
 
@@ -184,6 +220,47 @@ function play(i){
     conn.send({i:i,s:mySymbol});
     turn = mySymbol === "X" ? "O" : "X";
     document.getElementById("status").innerText = "Čekej na soupeře";
+
+    checkWinner();
+}
+
+/* CHECK WINNER */
+function checkWinner(){
+    const combos = [
+        [0,1,2],[3,4,5],[6,7,8], // řádky
+        [0,3,6],[1,4,7],[2,5,8], // sloupce
+        [0,4,8],[2,4,6]          // diagonály
+    ];
+
+    for(const c of combos){
+        if(board[c[0]] && board[c[0]] === board[c[1]] && board[c[0]] === board[c[2]]){
+            if(board[c[0]] === mySymbol){
+                document.getElementById("status").innerText = "🎉 You won!";
+                
+                // ZOBRAZENÍ FOTKY PŘI VÝHŘE
+                const overlay = document.getElementById("winOverlay");
+                overlay.style.display = "flex";
+                
+                // SKRYTÍ PO 4 SEKUNDÁCH
+                setTimeout(() => {
+                    overlay.style.display = "none";
+                }, 4000);
+
+            } else {
+                document.getElementById("status").innerText = "💀 You lost!";
+            }
+            turn = null; // zablokovat další tahy
+            return true;
+        }
+    }
+
+    if(board.every(cell => cell)){
+        document.getElementById("status").innerText = "🤝 Draw!";
+        turn = null;
+        return true;
+    }
+
+    return false;
 }
 </script>
 
