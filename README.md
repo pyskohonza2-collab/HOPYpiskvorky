@@ -12,7 +12,7 @@ body{
     background:linear-gradient(135deg,#1a001f,#4b0082);
     color:white;
     display:flex;
-    justify-content:space-between;
+    justify-content:flex-start;
     min-height:100vh;
     overflow:hidden;
 }
@@ -24,19 +24,6 @@ body{
     border-radius:15px;
     box-shadow:0 0 25px #9d4edd;
     white-space:pre-line;
-    font-size:16px;
-}
-#rightPanel{
-    width:250px;
-    background:rgba(0,0,0,0.65);
-    padding:20px;
-    margin:20px;
-    border-radius:15px;
-    box-shadow:0 0 25px #9d4edd;
-    white-space:pre-line;
-    font-size:16px;
-    overflow-y:auto;
-    max-height:calc(100vh - 40px);
 }
 .container{
     width:480px;
@@ -159,7 +146,6 @@ input{
 </style>
 </head>
 <body>
-
 <div id="leftPanel">
 Víš že:
 Hopy neni slepice
@@ -177,7 +163,7 @@ Martin poslal Tengemu 100kč xd.
         <button onclick="chooseMode('online')">🌐 ONLINE</button>
     </div>
 
-    <div class="onlineOptions" id="onlineOptions" style="display:none;">
+    <div class="onlineOptions" id="onlineOptions">
         <button onclick="createRoom()">Vytvořit místnost</button>
         <input id="roomCode" placeholder="4-místný kód">
         <button onclick="joinRoom()">Připojit se</button>
@@ -187,45 +173,6 @@ Martin poslal Tengemu 100kč xd.
     <div class="status" id="status"></div>
     <div class="board" id="board" style="display:none;"></div>
     <button id="restartBtn" onclick="restartGame()">🔄 HRÁT ZNOVU</button>
-</div>
-
-<div id="rightPanel">
-Petr Bezruč  
-Ostrava  
-Sto roků v šachtě žil, mlčel jsem  
-sto roků kopal jsem uhlí,  
-za sto let v rameni bezmasém  
-svaly mi v železo ztuhly.  
-
-Uhelný prach sed mi do očí,  
-rubíny ze rtů mi uhly,  
-ze vlasů, z vousů a z obočí  
-visí mi rampouchy uhlí.  
-
-Chléb s uhlím beru si do práce,  
-z roboty jdu na robotu,  
-při Dunaji strmí paláce,  
-z krve mé a z mého potu.  
-
-Sto roků v kopalně mlčel jsem,  
-kdo mi těch sto roků vrátí?  
-Když jsem jim pohrozil kladivem,  
-kdekdo se začal mi smáti.  
-
-Abych měl rozum, šel v kopalnu zas,  
-pro pány dřel se jak prve -  
-máchl jsem kladivem - teklo to v ráz  
-na Polské Ostravě krve!  
-
-Všichni vy na Slezské, všichni vy, dím,  
-nech je vám Petr neb Pavel,  
-mějž prs kryt krunýřem ocelovým,  
-tisícům k útoku zavel,  
-
-Všichni vy na Slezské, všichni vy, dím,  
-hlubokých páni vy dolů,  
-přijde den, z dolů jde plamen a dým,  
-přijde den, zúčtujem spolu!
 </div>
 
 <div id="overlay" class="overlay" onclick="hideOverlay()">
