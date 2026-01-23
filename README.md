@@ -12,31 +12,11 @@ body{
     background:linear-gradient(135deg,#1a001f,#4b0082);
     color:white;
     display:flex;
-    justify-content:space-between;
+    justify-content:center;
+    align-items:flex-start;
     min-height:100vh;
+    padding-top:50px;
     overflow:hidden;
-}
-#leftPanel{
-    width:250px;
-    background:rgba(0,0,0,0.65);
-    padding:20px;
-    margin:20px;
-    border-radius:15px;
-    box-shadow:0 0 25px #9d4edd;
-    white-space:pre-line;
-    font-size:16px;
-}
-#rightPanel{
-    width:250px;
-    background:rgba(0,0,0,0.65);
-    padding:20px;
-    margin:20px;
-    border-radius:15px;
-    box-shadow:0 0 25px #9d4edd;
-    white-space:pre-line;
-    font-size:16px;
-    overflow-y:auto;
-    max-height:calc(100vh - 40px);
 }
 .container{
     width:480px;
@@ -46,13 +26,12 @@ body{
     padding:30px;
     text-align:center;
     position:relative;
-    margin:20px;
 }
 h1{
     margin-top:0;
     color:#e0aaff;
     text-shadow:0 0 20px #c77dff;
-    font-size:38px;
+    font-size:40px;
 }
 button{
     padding:15px;
@@ -129,7 +108,6 @@ input{
     align-items:center;
     flex-direction:column;
     z-index:100;
-    cursor:pointer;
 }
 #overlay h2{
     font-size:50px;
@@ -159,14 +137,6 @@ input{
 </style>
 </head>
 <body>
-
-<div id="leftPanel">
-Víš že:
-Hopy neni slepice
-komu se neleni tomu se zeleni
-Martin poslal Tengemu 100kč xd.
-</div>
-
 <div class="container">
     <button id="backBtn" onclick="goBack()">⬅ Zpět</button>
     <h1>PIŠKVORKY</h1>
@@ -181,7 +151,7 @@ Martin poslal Tengemu 100kč xd.
         <button onclick="createRoom()">Vytvořit místnost</button>
         <input id="roomCode" placeholder="4-místný kód">
         <button onclick="joinRoom()">Připojit se</button>
-        <div id="readyStatus"></div>
+        <div id="readyStatus">0/2 ready</div>
     </div>
 
     <div class="status" id="status"></div>
@@ -189,53 +159,13 @@ Martin poslal Tengemu 100kč xd.
     <button id="restartBtn" onclick="restartGame()">🔄 HRÁT ZNOVU</button>
 </div>
 
-<div id="rightPanel">
-Petr Bezruč  
-Ostrava  
-Sto roků v šachtě žil, mlčel jsem  
-sto roků kopal jsem uhlí,  
-za sto let v rameni bezmasém  
-svaly mi v železo ztuhly.  
-
-Uhelný prach sed mi do očí,  
-rubíny ze rtů mi uhly,  
-ze vlasů, z vousů a z obočí  
-visí mi rampouchy uhlí.  
-
-Chléb s uhlím beru si do práce,  
-z roboty jdu na robotu,  
-při Dunaji strmí paláce,  
-z krve mé a z mého potu.  
-
-Sto roků v kopalně mlčel jsem,  
-kdo mi těch sto roků vrátí?  
-Když jsem jim pohrozil kladivem,  
-kdekdo se začal mi smáti.  
-
-Abych měl rozum, šel v kopalnu zas,  
-pro pány dřel se jak prve -  
-máchl jsem kladivem - teklo to v ráz  
-na Polské Ostravě krve!  
-
-Všichni vy na Slezské, všichni vy, dím,  
-nech je vám Petr neb Pavel,  
-mějž prs kryt krunýřem ocelovým,  
-tisícům k útoku zavel,  
-
-Všichni vy na Slezské, všichni vy, dím,  
-hlubokých páni vy dolů,  
-přijde den, z dolů jde plamen a dým,  
-přijde den, zúčtujem spolu!
-</div>
-
-<div id="overlay" class="overlay" onclick="hideOverlay()">
+<div id="overlay" class="overlay">
     <h2 id="overlayText"></h2>
 </div>
 
 <script>
-// --- proměnné ---
 let board=[], myTurn=false, mySymbol="X", enemySymbol="O", gameOver=false;
-let mode="", peer, conn, playerName="", readyCount=0;
+let mode="", peer=null, conn=null, playerName="", readyCount=0;
 
 const boardDiv=document.getElementById("board");
 const statusDiv=document.getElementById("status");
@@ -245,7 +175,6 @@ const readyStatusDiv=document.getElementById("readyStatus");
 const overlay=document.getElementById("overlay");
 const overlayText=document.getElementById("overlayText");
 
-// --- funkce ---
 function goBack(){
     boardDiv.style.display="none";
     boardDiv.innerHTML="";
@@ -257,7 +186,7 @@ function goBack(){
     overlay.style.display="none";
     if(conn) conn.close();
     if(peer) peer.destroy();
-    peer=null; conn=null; mode=""; readyCount=0; readyStatusDiv.textContent="";
+    peer=null; conn=null; mode=""; readyCount=0; readyStatusDiv.textContent="0/2 ready";
 }
 
 function chooseMode(m){
@@ -265,7 +194,6 @@ function chooseMode(m){
     if(!playerName) return alert("Zadej jméno");
     mode=m; document.getElementById("mainMenu").style.display="none";
     backBtn.style.display="block";
-
     if(mode==="bot"){
         boardDiv.style.display="grid";
         myTurn=true; mySymbol="X"; enemySymbol="O";
@@ -297,7 +225,6 @@ function play(i){
     if(checkWin(mySymbol)){end(true);return;}
     if(draw()){end(null);return;}
     myTurn=false;
-
     if(mode==="bot"){
         statusDiv.textContent="Bot přemýšlí...";
         setTimeout(botMove,400);
@@ -309,8 +236,8 @@ function play(i){
 
 function botMove(){
     let best=-1;
-    for(let i=0;i<9;i++){if(!board[i]){board[i]=enemySymbol;if(checkWin(enemySymbol)) best=i;board[i]="";}}
-    if(best===-1){for(let i=0;i<9;i++){if(!board[i]){board[i]=mySymbol;if(checkWin(mySymbol)) best=i;board[i]="";}}}
+    for(let i=0;i<9;i++){if(!board[i]){board[i]=enemySymbol;if(checkWin(enemySymbol)) best=i;board[i]="";}} 
+    if(best===-1){for(let i=0;i<9;i++){if(!board[i]){board[i]=mySymbol;if(checkWin(mySymbol)) best=i;board[i]="";}}} 
     if(best===-1){if(!board[4]) best=4;else{let free=board.map((v,i)=>v===""?i:null).filter(v=>v!==null);best=free[Math.floor(Math.random()*free.length)];}}
     board[best]=enemySymbol;
     updateBoard();
@@ -324,22 +251,11 @@ function checkWin(s){const w=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0
 function draw(){return board.every(x=>x);}
 function end(win){
     gameOver=true; restartBtn.style.display="block";
-    if(win===true){
-        overlayText.textContent="YOU WON 🎉";
-        overlay.style.display="flex";
-        confettiEffect();
-    } else if(win===false){
-        overlayText.innerHTML="YOU LOST 💀";
-        overlay.style.display="flex";
-        skullEffect();
-    } else{
-        overlayText.textContent="REMÍZA";
-        overlay.style.display="flex";
-    }
+    if(win===true){overlayText.textContent="YOU WON 🎉"; overlay.style.display="flex"; confettiEffect();}
+    else if(win===false){overlayText.textContent="YOU LOST 💀"; overlay.style.display="flex"; skullEffect();}
+    else{overlayText.textContent="REMÍZA"; overlay.style.display="flex";}
 }
-function hideOverlay(){overlay.style.display="none";}
 
-// efekty
 function confettiEffect(){
     for(let i=0;i<100;i++){
         const c=document.createElement("div");
@@ -364,7 +280,6 @@ function skullEffect(){
 }
 function randomColor(){const colors=["#ff0040","#00ffdd","#ffff00","#ff00ff","#00ff00","#ff7f00"];return colors[Math.floor(Math.random()*colors.length)];}
 
-// restart hry
 function restartGame(){
     initBoard(); 
     if(mode==="bot") myTurn=true;
@@ -374,23 +289,27 @@ function restartGame(){
     overlay.style.display="none";
 }
 
-// ONLINE funkce
 function generateCode(){return Math.floor(1000+Math.random()*9000).toString();}
+
 function createRoom(){
     const code=generateCode();
     peer=new Peer(code);
-    mySymbol="X"; enemySymbol="O"; myTurn=false;
+    mySymbol="X"; enemySymbol="O"; myTurn=true;
     initBoard(); boardDiv.style.display="none";
     peer.on("open",()=>statusDiv.textContent="Kód místnosti: "+code);
     peer.on("connection",c=>{
         conn=c;
         conn.on("data",receiveData);
-        readyCount=1; readyStatusDiv.textContent="1/2 ready";
-        if(conn) boardDiv.style.display="grid";
-        statusDiv.textContent=playerName+" je na tahu";
-        myTurn=true;
+        conn.on("open",()=>{
+            readyCount=1;
+            readyStatusDiv.textContent=readyCount+"/2 ready";
+            conn.send({ready:true});
+            boardDiv.style.display="grid";
+            statusDiv.textContent=playerName+" je na tahu";
+        });
     });
 }
+
 function joinRoom(){
     const code=document.getElementById("roomCode").value.trim();
     if(!code) return alert("Zadej kód");
@@ -399,12 +318,17 @@ function joinRoom(){
     initBoard(); boardDiv.style.display="none";
     peer.on("open",()=>{
         conn=peer.connect(code);
+        conn.on("open",()=>{
+            conn.send({ready:true});
+            readyCount=1;
+            readyStatusDiv.textContent=readyCount+"/2 ready";
+            boardDiv.style.display="grid";
+            statusDiv.textContent="Čekáš na soupeře";
+        });
         conn.on("data",receiveData);
-        readyCount=1; readyStatusDiv.textContent="1/2 ready";
-        if(conn) boardDiv.style.display="grid";
-        statusDiv.textContent="Čekáš na soupeře";
     });
 }
+
 function receiveData(d){
     if(d.ready){
         readyCount++;
@@ -416,8 +340,12 @@ function receiveData(d){
     updateBoard();
     if(checkWin(enemySymbol)){end(false);return;}
     if(draw()){end(null);return;}
-    myTurn=true; statusDiv.textContent=playerName+" je na tahu";
+    myTurn=true;
+    statusDiv.textContent=playerName+" je na tahu";
 }
+
+// kliknutím na overlay se skryje
+overlay.addEventListener("click", () => {overlay.style.display="none";});
 </script>
 </body>
 </html>
