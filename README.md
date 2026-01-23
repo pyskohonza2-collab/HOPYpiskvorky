@@ -236,8 +236,8 @@ function play(i){
 
 function botMove(){
     let best=-1;
-    for(let i=0;i<9;i++){if(!board[i]){board[i]=enemySymbol;if(checkWin(enemySymbol)) best=i;board[i]="";}} 
-    if(best===-1){for(let i=0;i<9;i++){if(!board[i]){board[i]=mySymbol;if(checkWin(mySymbol)) best=i;board[i]="";}}} 
+    for(let i=0;i<9;i++){if(!board[i]){board[i]=enemySymbol;if(checkWin(enemySymbol)) best=i;board[i]="";}}
+    if(best===-1){for(let i=0;i<9;i++){if(!board[i]){board[i]=mySymbol;if(checkWin(mySymbol)) best=i;board[i]="";}}}
     if(best===-1){if(!board[4]) best=4;else{let free=board.map((v,i)=>v===""?i:null).filter(v=>v!==null);best=free[Math.floor(Math.random()*free.length)];}}
     board[best]=enemySymbol;
     updateBoard();
@@ -256,28 +256,8 @@ function end(win){
     else{overlayText.textContent="REMÍZA"; overlay.style.display="flex";}
 }
 
-function confettiEffect(){
-    for(let i=0;i<100;i++){
-        const c=document.createElement("div");
-        c.className="confetti";
-        c.style.background=randomColor();
-        c.style.left=Math.random()*window.innerWidth+"px";
-        c.style.animationDuration=(1+Math.random()*2)+"s";
-        document.body.appendChild(c);
-        setTimeout(()=>c.remove(),2000);
-    }
-}
-function skullEffect(){
-    const s=document.createElement("div");
-    s.className="lebka";
-    s.textContent="💀";
-    document.body.appendChild(s);
-    s.style.position="absolute";
-    s.style.top="50%";
-    s.style.left="50%";
-    s.style.transform="translate(-50%,-50%)";
-    setTimeout(()=>s.remove(),2000);
-}
+function confettiEffect(){for(let i=0;i<100;i++){const c=document.createElement("div");c.className="confetti";c.style.background=randomColor();c.style.left=Math.random()*window.innerWidth+"px";c.style.animationDuration=(1+Math.random()*2)+"s";document.body.appendChild(c);setTimeout(()=>c.remove(),2000);}}
+function skullEffect(){const s=document.createElement("div");s.className="lebka";s.textContent="💀";document.body.appendChild(s);s.style.position="absolute";s.style.top="50%";s.style.left="50%";s.style.transform="translate(-50%,-50%)";setTimeout(()=>s.remove(),2000);}
 function randomColor(){const colors=["#ff0040","#00ffdd","#ffff00","#ff00ff","#00ff00","#ff7f00"];return colors[Math.floor(Math.random()*colors.length)];}
 
 function restartGame(){
@@ -291,21 +271,26 @@ function restartGame(){
 
 function generateCode(){return Math.floor(1000+Math.random()*9000).toString();}
 
+// --- OPRAVENO PRO GITHUB PAGES ---
 function createRoom(){
-    const code=generateCode();
-    peer=new Peer(code);
+    const code = generateCode();
+    peer = new Peer(code, { host: '0.peerjs.com', port: 443, secure: true });
+
     mySymbol="X"; enemySymbol="O"; myTurn=true;
-    initBoard(); boardDiv.style.display="none";
-    peer.on("open",()=>statusDiv.textContent="Kód místnosti: "+code);
-    peer.on("connection",c=>{
-        conn=c;
-        conn.on("data",receiveData);
-        conn.on("open",()=>{
-            readyCount=1;
-            readyStatusDiv.textContent=readyCount+"/2 ready";
-            conn.send({ready:true});
-            boardDiv.style.display="grid";
-            statusDiv.textContent=playerName+" je na tahu";
+    initBoard(); 
+    boardDiv.style.display="none";
+
+    peer.on("open", () => { statusDiv.textContent = "Kód místnosti: "+code; });
+
+    peer.on("connection", c => {
+        conn = c;
+        conn.on("data", receiveData);
+        conn.on("open", () => {
+            readyCount = 1;
+            readyStatusDiv.textContent = readyCount+"/2 ready";
+            conn.send({ ready: true });
+            boardDiv.style.display = "grid";
+            statusDiv.textContent = playerName+" je na tahu";
         });
     });
 }
@@ -313,26 +298,29 @@ function createRoom(){
 function joinRoom(){
     const code=document.getElementById("roomCode").value.trim();
     if(!code) return alert("Zadej kód");
-    peer=new Peer();
+
+    peer = new Peer({ host: '0.peerjs.com', port: 443, secure: true });
+
     mySymbol="O"; enemySymbol="X"; myTurn=false;
     initBoard(); boardDiv.style.display="none";
-    peer.on("open",()=>{
-        conn=peer.connect(code);
-        conn.on("open",()=>{
-            conn.send({ready:true});
-            readyCount=1;
-            readyStatusDiv.textContent=readyCount+"/2 ready";
-            boardDiv.style.display="grid";
-            statusDiv.textContent="Čekáš na soupeře";
+
+    peer.on("open", () => {
+        conn = peer.connect(code);
+        conn.on("open", () => {
+            conn.send({ ready:true });
+            readyCount = 1;
+            readyStatusDiv.textContent = readyCount+"/2 ready";
+            boardDiv.style.display = "grid";
+            statusDiv.textContent = "Čekáš na soupeře";
         });
-        conn.on("data",receiveData);
+        conn.on("data", receiveData);
     });
 }
 
 function receiveData(d){
     if(d.ready){
         readyCount++;
-        readyStatusDiv.textContent=readyCount+"/2 ready";
+        readyStatusDiv.textContent = readyCount+"/2 ready";
         if(readyCount===2) boardDiv.style.display="grid";
         return;
     }
